@@ -1,0 +1,44 @@
+{
+  "name": "mongogate",
+  "version": "1.0.0",
+  "description": "Elegant Aggregation Query Builder for MongoDB",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": ["src", "README.md", "LICENSE"],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "mongoose": ">=7 <9"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lalit-tambe/mongogate.git"
+  },
+  "keywords": [
+    "mongodb",
+    "aggregation",
+    "mongoose",
+    "query-builder"
+  ],
+  "author": "Lalit Tambe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lalit-tambe/mongogate/issues"
+  },
+  "homepage": "https://github.com/lalit-tambe/mongogate#readme",
+  "dependencies": {
+    "mongoose": "^8.18.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.33.0",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10"
+  }
+}
