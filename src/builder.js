@@ -2,6 +2,8 @@ export class MongogateBuilder {
   constructor(model, options = {}) {
     this._pipeline = [];
     this._project = null;
+    this._skip = null;
+    this._limit = null;
   }
 
   // ---------- WHERE ----------
@@ -43,6 +45,22 @@ export class MongogateBuilder {
       throw new Error("select() expects an array of field paths");
     this._project = this._project || {};
     for (const f of fields) this._project[f] = 1;
+    return this;
+  }
+
+  // ---------- SORT / LIMIT / SKIP ----------
+  orderBy(field, dir = "asc") {
+    this._pipeline.push({ $sort: { [field]: dir === "desc" ? -1 : 1 } });
+    return this;
+  }
+
+  limit(n) {
+    this._limit = Number(n);
+    return this;
+  }
+
+  skip(n) {
+    this._skip = Number(n);
     return this;
   }
 }
