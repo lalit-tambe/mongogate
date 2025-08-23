@@ -1,5 +1,6 @@
 export class MongogateBuilder {
   constructor(model, options = {}) {
+    this.model = model; // Mongoose model (root)
     this._pipeline = [];
     this._project = null;
     this._skip = null;
@@ -19,6 +20,43 @@ export class MongogateBuilder {
     const finalPipe = this.#finalizePipeline({ limit: 1 });
     const out = await this.model.aggregate(finalPipe);
     return out[0] || null;
+  }
+
+  // ---------- PAGINATION (with totals) ----------
+  // Returns { data, page, perPage, total, totalPages }
+  async paginate(page = 1, perPage = 10) {
+    page = Math.max(1, Number(page));
+    perPage = Math.max(1, Number(perPage));
+    const skip = (page - 1) * perPage;
+
+    // finalize pipeline (joins + projection + sort + skip/limit)
+    const finalPipe = this.#finalizePipeline({ skip, limit: perPage });
+
+    const result = await this.model.aggregate([
+      {
+        $facet: {
+          data: finalPipe,
+          total: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: { $ifNull: [{ $arrayElemAt: ["$total.count", 0] }, 0] },
+        },
+      },
+    ]);
+
+    const row = result[0] || { data: [], total: 0 };
+    const totalPages = Math.max(1, Math.ceil(row.total / perPage));
+
+    return {
+      data: row.data,
+      page,
+      perPage,
+      total: row.total,
+      totalPages,
+    };
   }
 
   // For debugging / tests
