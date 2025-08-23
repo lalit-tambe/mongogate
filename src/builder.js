@@ -6,6 +6,15 @@ export class MongogateBuilder {
     this._limit = null;
   }
 
+  // ---------- EXECUTION ----------
+  async get() {
+    const finalPipe = this.#finalizePipeline({
+      skip: this._skip,
+      limit: this._limit,
+    });
+    return this.model.aggregate(finalPipe);
+  }
+
   // ---------- WHERE ----------
   // Adds conditions to the pipeline for `$match`
   // .where({ a:1, b:2 }) | .where("field", value) | .where("field","op",value)
@@ -62,5 +71,21 @@ export class MongogateBuilder {
   skip(n) {
     this._skip = Number(n);
     return this;
+  }
+
+  // ---------- INTERNALS ----------
+
+  #finalizePipeline({ skip = null, limit = null } = {}) {
+    const pipe = [...this._pipeline];
+
+    // Note: WITH stages are already pushed during .with() calls.
+
+    if (this._project) pipe.push({ $project: this._project });
+    if (typeof skip === "number" && !Number.isNaN(skip))
+      pipe.push({ $skip: skip });
+    if (typeof limit === "number" && !Number.isNaN(limit))
+      pipe.push({ $limit: limit });
+
+    return pipe;
   }
 }
