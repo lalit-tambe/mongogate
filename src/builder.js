@@ -1,10 +1,29 @@
+import mongoose from "mongoose";
+
+/**
+ * Operators map
+ */
+const OP = {
+  "=": "$eq",
+  "==": "$eq",
+  "!=": "$ne",
+  ">": "$gt",
+  ">=": "$gte",
+  "<": "$lt",
+  "<=": "$lte",
+  in: "$in",
+  nin: "$nin",
+  regex: "$regex", // value must be /pattern/ or string (we'll turn to RegExp)
+};
 export class MongogateBuilder {
   constructor(model, options = {}) {
     this.model = model; // Mongoose model (root)
+    this.options = { maxWithDepth: 2, ...options };
     this._pipeline = [];
     this._project = null;
     this._skip = null;
     this._limit = null;
+    this._withPaths = new Set();
   }
 
   // ---------- EXECUTION ----------
@@ -125,6 +144,33 @@ export class MongogateBuilder {
     return this;
   }
 
+  // ---------- WITH (joins) ----------
+  // Supports "a" or "a.b" (two levels). Extendable later.
+  with(path) {
+    if (typeof path !== "string" || !path)
+      throw new Error("with() expects a non-empty string path");
+    if (this._withPaths.has(path)) return this; // idempotent
+    this._withPaths.add(path);
+
+    const parts = path.split(".");
+    if (parts.length > this.options.maxWithDepth) {
+      throw new Error(
+        `with(): supports up to ${this.options.maxWithDepth} levels (configure 'maxWithDepth' to increase).`
+      );
+    }
+
+    if (parts.length === 1) {
+      this.#lookupTopLevel(parts[0]);
+    } else if (parts.length === 2) {
+      this.#lookupNested(parts[0], parts[1]);
+    } else {
+      // For >2 levels, you can implement recursion similar to #lookupNested
+      throw new Error("with(): nested depth > 2 not implemented in MVP.");
+    }
+
+    return this;
+  }
+
   // ---------- INTERNALS ----------
 
   #finalizePipeline({ skip = null, limit = null } = {}) {
@@ -139,5 +185,113 @@ export class MongogateBuilder {
       pipe.push({ $limit: limit });
 
     return pipe;
+  }
+
+  #getSchemaPathInfo(model, path) {
+    const p = model.schema.path(path);
+    if (!p)
+      throw new Error(`Path '${path}' not found on ${model.modelName} schema`);
+    // Single ref
+    if (p.options && p.options.ref) {
+      return { refModelName: p.options.ref, isArray: false };
+    }
+    // Array of refs
+    if (p.caster && p.caster.options && p.caster.options.ref) {
+      return { refModelName: p.caster.options.ref, isArray: true };
+    }
+    throw new Error(`Path '${path}' is not a ref on ${model.modelName}`);
+  }
+
+  #lookupTopLevel(field) {
+    const { refModelName, isArray } = this.#getSchemaPathInfo(
+      this.model,
+      field
+    );
+    const refModel = mongoose.model(refModelName);
+
+    this._pipeline.push({
+      $lookup: {
+        from: refModel.collection.name,
+        localField: field,
+        foreignField: "_id",
+        as: field,
+      },
+    });
+
+    if (!isArray) {
+      this._pipeline.push({
+        $unwind: { path: `$${field}`, preserveNullAndEmptyArrays: true },
+      });
+    }
+  }
+
+  #lookupNested(parentField, childField) {
+    // Ensure parent joined first
+    const { refModelName, isArray: parentIsArray } = this.#getSchemaPathInfo(
+      this.model,
+      parentField
+    );
+    const parentModel = mongoose.model(refModelName);
+    this.#lookupTopLevel(parentField);
+
+    // Determine child on parent model
+    const childInfo = this.#getSchemaPathInfo(parentModel, childField);
+    const childModel = mongoose.model(childInfo.refModelName);
+
+    const tempAs = `${parentField}_${childField}__mg`;
+
+    // Lookup all child docs for referenced IDs
+    this._pipeline.push({
+      $lookup: {
+        from: childModel.collection.name,
+        localField: `${parentField}.${childField}`,
+        foreignField: "_id",
+        as: tempAs,
+      },
+    });
+
+    if (parentIsArray) {
+      // Map child back into each parent array element
+      this._pipeline.push({
+        $set: {
+          [parentField]: {
+            $map: {
+              input: `$${parentField}`,
+              as: "elem",
+              in: {
+                $mergeObjects: [
+                  "$$elem",
+                  {
+                    [childField]: {
+                      $first: {
+                        $filter: {
+                          input: `$${tempAs}`,
+                          as: "c",
+                          cond: { $eq: ["$$c._id", `$$elem.${childField}`] },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+    } else {
+      // Parent is object; merge child into parent.child
+      this._pipeline.push({
+        $set: {
+          [parentField]: {
+            $mergeObjects: [
+              `$${parentField}`,
+              { [childField]: { $first: `$${tempAs}` } },
+            ],
+          },
+        },
+      });
+    }
+
+    this._pipeline.push({ $unset: tempAs });
   }
 }
