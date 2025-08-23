@@ -1,6 +1,7 @@
 export class MongogateBuilder {
   constructor(model, options = {}) {
     this._pipeline = [];
+    this._project = null;
   }
 
   // ---------- WHERE ----------
