@@ -15,6 +15,20 @@ export class MongogateBuilder {
     return this.model.aggregate(finalPipe);
   }
 
+  async first() {
+    const finalPipe = this.#finalizePipeline({ limit: 1 });
+    const out = await this.model.aggregate(finalPipe);
+    return out[0] || null;
+  }
+
+  // For debugging / tests
+  pipeline() {
+    return this.#finalizePipeline({
+      skip: this._skip,
+      limit: this._limit,
+    });
+  }
+
   // ---------- WHERE ----------
   // Adds conditions to the pipeline for `$match`
   // .where({ a:1, b:2 }) | .where("field", value) | .where("field","op",value)
