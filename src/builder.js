@@ -15,18 +15,54 @@ const OP = {
   nin: "$nin",
   regex: "$regex", // value must be /pattern/ or string (we'll turn to RegExp)
 };
+
+/**
+ * Elegant aggregation query builder for Mongoose.
+ *
+ * Example:
+ * ```js
+ * const users = await User.mg()
+ *   .where("isActive", true)
+ *   .with("role")
+ *   .select(["email", "role.name"])
+ *   .orderBy("createdAt", "desc")
+ *   .paginate(1, 10);
+ * ```
+ */
 export class MongogateBuilder {
+  /**
+   * @param {mongoose.Model<any>} model - The Mongoose model this builder wraps.
+   * @param {{ maxWithDepth?: number }} [options] - Plugin options.
+   */
   constructor(model, options = {}) {
+    /** @type {mongoose.Model<any>} */
     this.model = model; // Mongoose model (root)
+
+    /** @type {{ maxWithDepth: number }} */
     this.options = { maxWithDepth: 2, ...options };
+
+    /** @type {any[]} */
     this._pipeline = [];
+
+    /** @type {Record<string,1>|null} */
     this._project = null;
+
+    /** @type {number|null} */
     this._skip = null;
+
+    /** @type {number|null} */
     this._limit = null;
+
+    /** @type {Set<string>} */
     this._withPaths = new Set();
   }
 
   // ---------- EXECUTION ----------
+
+  /**
+   * Execute aggregation pipeline and return all results.
+   * @returns {Promise<any[]>}
+   */
   async get() {
     const finalPipe = this.#finalizePipeline({
       skip: this._skip,
@@ -35,6 +71,10 @@ export class MongogateBuilder {
     return this.model.aggregate(finalPipe);
   }
 
+  /**
+   * Execute pipeline and return the first document, or null.
+   * @returns {Promise<any|null>}
+   */
   async first() {
     const finalPipe = this.#finalizePipeline({ limit: 1 });
     const out = await this.model.aggregate(finalPipe);
@@ -42,7 +82,13 @@ export class MongogateBuilder {
   }
 
   // ---------- PAGINATION (with totals) ----------
-  // Returns { data, page, perPage, total, totalPages }
+
+  /**
+   * Execute with pagination and total count.
+   * @param {number} [page=1] - Current page (1-based).
+   * @param {number} [perPage=10] - Items per page.
+   * @returns {Promise<{data:any[], page:number, perPage:number, total:number, totalPages:number}>}
+   */
   async paginate(page = 1, perPage = 10) {
     page = Math.max(1, Number(page));
     perPage = Math.max(1, Number(perPage));
@@ -78,7 +124,12 @@ export class MongogateBuilder {
     };
   }
 
-  // For debugging / tests
+  // ---------- DEBUG ----------
+
+  /**
+   * Get finalized pipeline (without executing).
+   * @returns {any[]}
+   */
   pipeline() {
     return this.#finalizePipeline({
       skip: this._skip,
@@ -87,8 +138,19 @@ export class MongogateBuilder {
   }
 
   // ---------- WHERE ----------
-  // Adds conditions to the pipeline for `$match`
-  // .where({ a:1, b:2 }) | .where("field", value) | .where("field","op",value)
+
+  /**
+   * Add a `$match` condition.
+   * Supports:
+   * - `.where({ a: 1, b: 2 })`
+   * - `.where("field", value)`
+   * - `.where("field", ">", 5)`
+   *
+   * @param {string|Record<string,any>} fieldOrObj
+   * @param {string|any} [opOrVal]
+   * @param {any} [maybeVal]
+   * @returns {this}
+   */
   where(fieldOrObj, opOrVal, maybeVal) {
     let cond = {};
 
@@ -118,8 +180,12 @@ export class MongogateBuilder {
   }
 
   // ---------- SELECT ----------
-  // Add only selected fields in the output,works for `$project`
-  // .select(["email","role.name","subscriptions.plan.title"])
+
+  /**
+   * Project only specific fields.
+   * @param {string[]} fields
+   * @returns {this}
+   */
   select(fields = []) {
     if (!Array.isArray(fields))
       throw new Error("select() expects an array of field paths");
@@ -129,23 +195,45 @@ export class MongogateBuilder {
   }
 
   // ---------- SORT / LIMIT / SKIP ----------
+
+  /**
+   * Add a `$sort` stage.
+   * @param {string} field
+   * @param {"asc"|"desc"} [dir="asc"]
+   * @returns {this}
+   */
   orderBy(field, dir = "asc") {
     this._pipeline.push({ $sort: { [field]: dir === "desc" ? -1 : 1 } });
     return this;
   }
 
+  /**
+   * Limit the number of results.
+   * @param {number} n
+   * @returns {this}
+   */
   limit(n) {
     this._limit = Number(n);
     return this;
   }
 
+  /**
+   * Skip N results.
+   * @param {number} n
+   * @returns {this}
+   */
   skip(n) {
     this._skip = Number(n);
     return this;
   }
 
   // ---------- WITH (joins) ----------
-  // Supports "a" or "a.b" (two levels). Extendable later.
+
+  /**
+   * Populate related refs (one or two levels deep).
+   * @param {string} path - e.g. `"role"` or `"subscriptions.plan"`.
+   * @returns {this}
+   */
   with(path) {
     if (typeof path !== "string" || !path)
       throw new Error("with() expects a non-empty string path");
@@ -173,6 +261,7 @@ export class MongogateBuilder {
 
   // ---------- INTERNALS ----------
 
+  /** @private */
   #finalizePipeline({ skip = null, limit = null } = {}) {
     const pipe = [...this._pipeline];
 
@@ -187,6 +276,7 @@ export class MongogateBuilder {
     return pipe;
   }
 
+  /** @private */
   #getSchemaPathInfo(model, path) {
     const p = model.schema.path(path);
     if (!p)
@@ -202,6 +292,7 @@ export class MongogateBuilder {
     throw new Error(`Path '${path}' is not a ref on ${model.modelName}`);
   }
 
+  /** @private */
   #lookupTopLevel(field) {
     const { refModelName, isArray } = this.#getSchemaPathInfo(
       this.model,
@@ -225,6 +316,7 @@ export class MongogateBuilder {
     }
   }
 
+  /** @private */
   #lookupNested(parentField, childField) {
     // Ensure parent joined first
     const { refModelName, isArray: parentIsArray } = this.#getSchemaPathInfo(
