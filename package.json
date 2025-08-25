@@ -2,14 +2,25 @@
   "name": "mongogate",
   "version": "1.0.0",
   "description": "Elegant Aggregation Query Builder for MongoDB",
-  "main": "src/index.js",
   "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup -c",
+    "test": "npm run test:dev",
+    "test:dev": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dev.js",
+    "test:dist": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dist.js"
   },
   "peerDependencies": {
     "mongoose": ">=7 <9"
@@ -34,11 +45,17 @@
   },
   "homepage": "https://github.com/lalit-tambe/mongogate#readme",
   "dependencies": {
-    "mongoose": "^8.18.0"
+    "mongoose": ">=7 <9"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@types/jest": "^30.0.0",
+    "cross-env": "^10.0.0",
     "eslint": "^9.33.0",
     "jest": "^30.0.5",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "rollup": "^4.48.1"
   }
 }
