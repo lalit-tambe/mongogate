@@ -182,15 +182,43 @@ export class MongogateBuilder {
   // ---------- SELECT ----------
 
   /**
-   * Project only specific fields.
-   * @param {string[]} fields
-   * @returns {this}
+   * Add a $project stage to include/exclude specific fields.
+   *
+   * @param {string|string[]} fields - A space-separated string, a single field,
+   *   or an array of fields. Prefix field with "-" to exclude.
+   * @returns {MongogateBuilder} this
+   *
+   * @example
+   * builder.select("name"); // include single field name
+   * builder.select("name age"); // include name, age
+   * builder.select("-password -token"); // exclude password, token
+   * builder.select(["name", "-email"]); // include name, exclude email
    */
   select(fields = []) {
-    if (!Array.isArray(fields))
-      throw new Error("select() expects an array of field paths");
-    this._project = this._project || {};
-    for (const f of fields) this._project[f] = 1;
+    // Normalize input
+    if (typeof fields === "string") {
+      fields = fields.trim().split(/\s+/);
+    }
+
+    if (!Array.isArray(fields)) {
+      throw new Error("select() expects a string or an array of field paths");
+    }
+
+    // Reset _project each call (overwrite behavior)
+    this._project = {};
+
+    for (const f of fields) {
+      if (typeof f !== "string") {
+        throw new Error("select() expects fields as strings");
+      }
+
+      if (f.startsWith("-")) {
+        this._project[f.substring(1)] = 0; // exclude field
+      } else {
+        this._project[f] = 1; // include field
+      }
+    }
+
     return this;
   }
 
