@@ -225,13 +225,76 @@ export class MongogateBuilder {
   // ---------- SORT / LIMIT / SKIP ----------
 
   /**
-   * Add a `$sort` stage.
-   * @param {string} field
-   * @param {"asc"|"desc"} [dir="asc"]
+   * Adds a $sort stage.
+   * Supports:
+   *   orderBy("createdAt", "desc")
+   *   orderBy("name -age email")
+   *   orderBy(["name", "-age", "email"])
+   *   orderBy({ name: 1, age: -1 })    // also supports { createdAt: "desc" }
+   *
+   * Multiple calls:
+   * - If the last stage is a $sort → merge new fields into that $sort
+   * - Otherwise → push a new $sort at the end (preserves stage ordering)
+   *
+   * @param {string|string[]|Record<string, any>} fields
+   * @param {"asc"|"desc"|1|-1} [dir="asc"] Only used for the single-field (string, 2-arg) form.
    * @returns {this}
    */
-  orderBy(field, dir = "asc") {
-    this._pipeline.push({ $sort: { [field]: dir === "desc" ? -1 : 1 } });
+  orderBy(fields, dir = "asc") {
+    if (fields == null)
+      throw new Error("orderBy() requires at least one field");
+
+    /** @type {Record<string, 1|-1>} */
+    let spec = {};
+
+    // helper: normalize direction values
+    const norm = (v) => {
+      if (v === -1 || v === "desc") return -1;
+      if (v === 1 || v === "asc") return 1;
+      throw new Error(
+        "orderBy() object values must be 1, -1, 'asc', or 'desc'"
+      );
+    };
+
+    // Case A: object
+    if (typeof fields === "object" && !Array.isArray(fields)) {
+      for (const [k, v] of Object.entries(fields)) spec[k] = norm(v);
+    }
+    // Case B: "field", "dir"
+    else if (typeof fields === "string" && arguments.length >= 2) {
+      spec[fields] = norm(dir);
+    }
+    // Case C: string → tokens
+    else if (typeof fields === "string") {
+      const tokens = fields.trim().split(/\s+/).filter(Boolean);
+      for (const t of tokens) {
+        if (t.startsWith("-")) spec[t.slice(1)] = -1;
+        else spec[t] = 1;
+      }
+    }
+    // Case D: array of tokens
+    else if (Array.isArray(fields)) {
+      for (const t of fields) {
+        if (typeof t !== "string")
+          throw new Error("orderBy() array values must be strings");
+        if (!t) continue;
+        if (t.startsWith("-")) spec[t.slice(1)] = -1;
+        else spec[t] = 1;
+      }
+    } else {
+      throw new Error("orderBy() expects string, array, or object");
+    }
+
+    // Merge into the last $sort if and only if it is the LAST stage.
+    const lastIdx = this._pipeline.length - 1;
+    if (lastIdx >= 0 && this._pipeline[lastIdx].$sort) {
+      this._pipeline[lastIdx] = {
+        $sort: { ...this._pipeline[lastIdx].$sort, ...spec },
+      };
+    } else {
+      this._pipeline.push({ $sort: spec });
+    }
+
     return this;
   }
 
