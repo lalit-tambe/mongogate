@@ -1,5 +1,5 @@
 // tests/builder.orderBy.test.js
-import { MongogateBuilder } from "../src/builder.js";
+import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.orderBy()", () => {
   let qb;

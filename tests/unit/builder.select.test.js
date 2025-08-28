@@ -1,4 +1,4 @@
-import { MongogateBuilder } from "../src/builder.js";
+import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.select()", () => {
   let builder;

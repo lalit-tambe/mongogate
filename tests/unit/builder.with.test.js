@@ -1,7 +1,7 @@
 // tests/builder.with.test.js
 import { jest } from "@jest/globals";
 import mongoose from "mongoose";
-import { MongogateBuilder } from "../src/builder.js";
+import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.with()", () => {
   let mockUserModel, mockRoleModel, mockPostModel, mockCategoryModel;

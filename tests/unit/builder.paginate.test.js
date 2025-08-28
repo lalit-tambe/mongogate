@@ -1,6 +1,6 @@
 // tests/builder.paginate.test.js
 import { jest } from "@jest/globals";
-import { MongogateBuilder } from "../src/builder.js";
+import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.paginate()", () => {
   let mockModel;

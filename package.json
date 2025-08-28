@@ -19,9 +19,11 @@
   ],
   "scripts": {
     "build": "rollup -c",
-    "test": "npm run test:dev",
+    "test": "npm run test:unit && npm run test:integration",
     "test:dev": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dev.js",
     "test:dist": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dist.js",
+    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dev.js tests/unit",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.dev.js tests/integration",
     "types": "tsc",
     "build:all": "npm run build && npm run types"
   },
@@ -58,6 +60,7 @@
     "cross-env": "^10.0.0",
     "eslint": "^9.33.0",
     "jest": "^30.0.5",
+    "mongodb-memory-server": "^10.2.0",
     "nodemon": "^3.1.10",
     "rollup": "^4.48.1",
     "typescript": "^5.9.2"

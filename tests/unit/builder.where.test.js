@@ -1,6 +1,6 @@
 // tests/builder.where.test.js
 import { jest } from "@jest/globals";
-import { MongogateBuilder } from "../src/builder.js";
+import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.where()", () => {
   /** @type {{ aggregate: jest.Mock, schema: { path: jest.Mock } }} */
