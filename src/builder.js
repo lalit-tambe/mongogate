@@ -94,14 +94,19 @@ export class MongogateBuilder {
     perPage = Math.max(1, Number(perPage));
     const skip = (page - 1) * perPage;
 
-    // finalize pipeline (joins + projection + sort + skip/limit)
-    const finalPipe = this.#finalizePipeline({ skip, limit: perPage });
+    // Pipeline for fetching the paginated data (includes sorting, skipping, etc.)
+    const dataPipe = this.#finalizePipeline({ skip, limit: perPage });
+
+    // Pipeline for counting the total matching documents.
+    // It should include all filtering/joining stages from the main pipeline.
+    const countPipe = [...this._pipeline];
 
     const result = await this.model.aggregate([
       {
         $facet: {
-          data: finalPipe,
-          total: [{ $count: "count" }],
+          data: dataPipe,
+          // The total count now correctly uses the main pipeline
+          total: [...countPipe, { $count: "count" }],
         },
       },
       {
