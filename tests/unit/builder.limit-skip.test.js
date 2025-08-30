@@ -1,4 +1,3 @@
-// tests/builder.limit.test.js
 import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.limit() and .skip()", () => {

@@ -1,4 +1,3 @@
-// tests/builder.with.test.js
 import { jest } from "@jest/globals";
 import mongoose from "mongoose";
 import { MongogateBuilder } from "../../src/builder.js";

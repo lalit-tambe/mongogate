@@ -1,4 +1,3 @@
-// tests/builder.where.test.js
 import { jest } from "@jest/globals";
 import { MongogateBuilder } from "../../src/builder.js";
 

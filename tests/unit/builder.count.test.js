@@ -1,4 +1,3 @@
-// tests/unit/builder.count.test.js
 import { jest } from "@jest/globals";
 import { MongogateBuilder } from "../../src/builder.js";
 

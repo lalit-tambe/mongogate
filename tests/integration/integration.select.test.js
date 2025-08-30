@@ -1,4 +1,3 @@
-// tests/integration/builder.select.test.js
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { mongogatePlugin } from "../../src/index.js";

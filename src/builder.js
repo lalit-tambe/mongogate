@@ -372,6 +372,27 @@ export class MongogateBuilder {
     return result.length > 0 ? result[0][fieldName] : 0;
   }
 
+  // ---------- ADDFIELDS ----------
+
+  /**
+   * Adds a $addFields stage to the pipeline.
+   *
+   * @param {Record<string, any>} fields - An object specifying the fields to add.
+   * @returns {this}
+   */
+  addFields(fields) {
+    if (
+      typeof fields !== "object" ||
+      fields === null ||
+      Array.isArray(fields)
+    ) {
+      throw new Error("addFields() expects a non-null object.");
+    }
+
+    this._pipeline.push({ $addFields: fields });
+    return this;
+  }
+
   // ---------- INTERNALS ----------
 
   /** @private */
