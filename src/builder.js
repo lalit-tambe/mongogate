@@ -355,6 +355,23 @@ export class MongogateBuilder {
     return this;
   }
 
+  // ---------- COUNT ----------
+
+  /**
+   * Execute a count of the documents matching the query.
+   * @param {string} [fieldName='total'] - The name of the field to return the count in.
+   * @returns {Promise<number>}
+   */
+  async count(fieldName = "total") {
+    // We don't need sorting, skipping, or limiting for a count.
+    const countPipeline = [...this._pipeline];
+    countPipeline.push({ $count: fieldName });
+
+    const result = await this.model.aggregate(countPipeline);
+
+    return result.length > 0 ? result[0][fieldName] : 0;
+  }
+
   // ---------- INTERNALS ----------
 
   /** @private */
