@@ -1,4 +1,3 @@
-// tests/builder.paginate.test.js
 import { jest } from "@jest/globals";
 import { MongogateBuilder } from "../../src/builder.js";
 
@@ -38,12 +37,19 @@ describe("MongogateBuilder.paginate()", () => {
 
     // 2. Check the structure of the pipeline sent to aggregate()
     const calledPipeline = mockModel.aggregate.mock.calls[0][0];
+
+    // Check the 'data' pipeline
     expect(calledPipeline[0].$facet.data[0]).toEqual({
       $match: { active: true },
     });
     expect(calledPipeline[0].$facet.data[1]).toEqual({ $skip: 10 });
     expect(calledPipeline[0].$facet.data[2]).toEqual({ $limit: 10 });
-    expect(calledPipeline[0].$facet.total).toEqual([{ $count: "count" }]);
+
+    // Check the 'total' pipeline
+    expect(calledPipeline[0].$facet.total).toEqual([
+      { $match: { active: true } },
+      { $count: "count" },
+    ]);
 
     // 3. Check the returned pagination object
     expect(result).toEqual({
@@ -51,7 +57,7 @@ describe("MongogateBuilder.paginate()", () => {
       page: 2,
       perPage: 10,
       total: mockTotal,
-      totalPages: 3, // Math.ceil(27 / 10)
+      totalPages: 3,
     });
   });
 
@@ -84,7 +90,7 @@ describe("MongogateBuilder.paginate()", () => {
       page: 1,
       perPage: 10,
       total: 0,
-      totalPages: 1, // Should be at least 1 page
+      totalPages: 1,
     });
   });
 
