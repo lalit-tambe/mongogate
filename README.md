@@ -138,3 +138,190 @@ await User.mg().select("-password").get();
 // Include name but exclude the _id field
 await User.mg().select("name -_id").get();
 ```
+
+#### `orderBy()`
+
+Adds a `$sort` stage to the pipeline.
+
+- **`orderBy(fields, direction)`**
+
+  - **`fields`**: `String | Array<String> | Object` - A single field, a space-separated string, an array of fields, or an object. Prefix with - for descending in string/array format.
+
+  - **`direction`**: `String` (Optional) - 'asc' or 'desc'. Only used when the first argument is a single string field.
+
+  - **Returns:** `MongogateBuilder` (for chaining).
+
+**Examples:**
+
+```javascript
+// Single field
+builder.orderBy("createdAt", "desc");
+
+// Multiple fields as a string
+builder.orderBy("age -createdAt");
+
+// Multiple fields as an object
+builder.orderBy({ age: 1, createdAt: -1 });
+```
+
+#### `limit()` & `skip()`
+
+Adds `$limit` and `$skip` stages for basic pagination.
+
+- **`limit(count)`**
+
+  - **`count`**: `Number` - The maximum number of documents to return.
+  - **Returns:** `MongogateBuilder` (for chaining).
+
+- **`skip(count)`**
+  - **`count`**: `Number` - The number of documents to skip.
+  - **Returns:** `MongogateBuilder` (for chaining).
+
+**Example:**
+
+```javascript
+// Get 10 users, but skip the first 20
+builder.skip(20).limit(10);
+```
+
+#### `with()`
+
+Populates relations using `$lookup`. Supports one or two levels of depth.
+
+- **`with(path)`**
+  - **`path`**: `String` - The path to the related model, e.g., `"role"` or `"posts.category"`.
+  - **Returns:** `MongogateBuilder` (for chaining).
+
+**Example:**
+
+```javascript
+// Populate a user's role
+builder.with("role");
+
+// Populate a user's posts and the category of each post
+builder.with("posts.category");
+```
+
+#### `addFields()`
+
+Adds a `$addFields` stage, useful for adding computed fields to documents.
+
+- **`addFields(fields)`**
+  - **`fields`**: `Object` - An object where keys are the new field names and values are MongoDB aggregation expressions.
+  - **Returns:** `MongogateBuilder` (for chaining).
+
+**Example:**
+
+```javascript
+// Add a new `inventoryValue` field
+builder.addFields({
+  inventoryValue: { $multiply: ["$price", "$stock"] },
+});
+```
+
+### Executing the Query
+
+Execution methods terminate the builder chain, run the aggregation pipeline against the database, and return the results.
+
+#### `get()`
+
+Executes the pipeline and returns all matching documents.
+
+- **`get()`**
+  - **Returns:** `Promise<Array>` - A promise that resolves to an array of the resulting documents.
+
+**Example:**
+
+```javascript
+// Get all active users
+const allActiveUsers = await User.mg().where("isActive", true).get();
+```
+
+#### `first()`
+
+Executes the pipeline and returns the first matching document.
+
+- **`first()`**
+  - **Returns:** `Promise<Object|null>` - A promise that resolves to the first matching document, or `null` if no documents are found.
+
+**Example:**
+
+```javascript
+// Get the oldest user
+const oldestUser = await User.mg().orderBy("age", "desc").first();
+```
+
+#### `count()`
+
+Executes a count of the documents matching the query and returns the total.
+
+- **`count()`**
+  - **Returns:** `Promise<Number>` - A promise that resolves to the total number of matching documents.
+
+**Example:**
+
+```javascript
+// Count how many users are over 30
+const userCount = await User.mg().where("age", ">", 30).count();
+```
+
+#### `paginate()`
+
+Executes the pipeline and returns a paginated result object.
+
+- **`paginate(page, perPage)`**
+  - **`page`**: `Number` - The current page number (1-based).
+  - **`perPage`**: `Number` - The number of documents to return per page.
+  - **Returns:** `Promise<Object>` - A promise that resolves to a pagination object.
+
+**Example:**
+
+```javascript
+const results = await User.mg().where("isActive", true).paginate(2, 15);
+```
+
+**Pagination Object Structure:**
+
+```javascript
+{
+  data: [ ... ],       // Array of documents for the current page
+  page: 2,             // The current page number
+  perPage: 15,         // The number of items per page
+  total: 100,          // Total documents matching the query
+  totalPages: 7        // Total number of pages
+}
+```
+
+## Advanced Examples
+
+This section showcases how to combine multiple builder methods to solve more complex, real-world problems.
+
+**Complex User Query:**
+
+Find the 10 most recently active admins who are over 30, populate their roles, and select only their name and email.
+
+```javascript
+const admins = await User.mg()
+  .where("isActive", true)
+  .where("age", ">", 30)
+  .with("role") // Assumes role.name exists for the next filter
+  .where("role.name", "Admin")
+  .orderBy("last_login_at", "desc")
+  .limit(10)
+  .select("name email role")
+  .get();
+```
+
+**Products with Calculated Fields:**
+
+Find all products with an inventory value greater than $10,000 and return the results paginated.
+
+```javascript
+const valuableProducts = await Product.mg()
+  .addFields({
+    inventoryValue: { $multiply: ["$price", "$stock"] },
+  })
+  .where("inventoryValue", ">", 10000)
+  .orderBy("inventoryValue", "desc")
+  .paginate(1, 20);
+```
