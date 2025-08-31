@@ -1,20 +1,10 @@
 import { jest } from "@jest/globals";
-import mongoose from "mongoose";
 import { MongogateBuilder } from "../../src/builder.js";
 
 describe("MongogateBuilder.with()", () => {
   let mockUserModel, mockRoleModel, mockPostModel, mockCategoryModel;
 
   beforeEach(() => {
-    // Mock Mongoose's .model() to return our mock models
-    jest.spyOn(mongoose, "model").mockImplementation((modelName) => {
-      if (modelName === "User") return mockUserModel;
-      if (modelName === "Role") return mockRoleModel;
-      if (modelName === "Post") return mockPostModel;
-      if (modelName === "Category") return mockCategoryModel;
-      throw new Error(`Mock for model "${modelName}" not found`);
-    });
-
     // --- Mock Models and Schemas ---
 
     mockRoleModel = {
@@ -51,6 +41,18 @@ describe("MongogateBuilder.with()", () => {
       },
     };
 
+    // The mock model now needs a `db` property that has its own `model` function.
+    // This function will return the correct mock model based on the name.
+    const mockDb = {
+      model: jest.fn((modelName) => {
+        if (modelName === "Role") return mockRoleModel;
+        if (modelName === "Post") return mockPostModel;
+        if (modelName === "Category") return mockCategoryModel;
+        if (modelName === "User") return mockUserModel;
+        throw new Error(`Mock for model "${modelName}" not found in db mock`);
+      }),
+    };
+
     mockUserModel = {
       modelName: "User",
       collection: { name: "users" },
@@ -67,6 +69,7 @@ describe("MongogateBuilder.with()", () => {
           return null; // Path not found
         }),
       },
+      db: mockDb,
     };
   });
 

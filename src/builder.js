@@ -432,7 +432,7 @@ export class MongogateBuilder {
       this.model,
       field
     );
-    const refModel = mongoose.model(refModelName);
+    const refModel = this.model.db.model(refModelName);
 
     this._pipeline.push({
       $lookup: {
@@ -457,12 +457,12 @@ export class MongogateBuilder {
       this.model,
       parentField
     );
-    const parentModel = mongoose.model(refModelName);
+    const parentModel = this.model.db.model(refModelName);
     this.#lookupTopLevel(parentField);
 
     // Determine child on parent model
     const childInfo = this.#getSchemaPathInfo(parentModel, childField);
-    const childModel = mongoose.model(childInfo.refModelName);
+    const childModel = this.model.db.model(childInfo.refModelName);
 
     const tempAs = `${parentField}_${childField}__mg`;
 
