@@ -57,6 +57,9 @@ userSchema.plugin(mongogatePlugin);
 const User = mongoose.model("User", userSchema);
 ```
 
+**A Note on Mongoose `refs`:**
+While Mongoose allows you to pass a model object directly to `ref`, the best practice is to always use the string name of the model (e.g., `ref: 'Role'`). This prevents potential circular dependency errors in Node.js when you have models that need to reference each other.
+
 Now you can use the `mg()` method to start building queries:
 
 ```javascript
