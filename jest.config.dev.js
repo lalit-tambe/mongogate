@@ -4,6 +4,6 @@ export default {
   moduleFileExtensions: ["js", "json"],
   roots: ["<rootDir>/tests/unit", "<rootDir>/tests/integration"],
   moduleNameMapper: {
-    "^mongogate$": "<rootDir>/src/index.js",
+    "^mongo-aggregate$": "<rootDir>/src/index.js",
   },
 };

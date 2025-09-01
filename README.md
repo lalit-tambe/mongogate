@@ -1,4 +1,4 @@
-# Mongogate
+# Mongo-aggregate
 
 An elegant, Laravel Eloquent-style query builder that compiles to a MongoDB aggregation pipeline. Designed as a Mongoose plugin to be intuitive and powerful.
 
@@ -30,7 +30,7 @@ An elegant, Laravel Eloquent-style query builder that compiles to a MongoDB aggr
 Since this is a Mongoose plugin, you will need `mongoose` installed as well.
 
 ```bash
-npm install mongogate mongoose
+npm install mongo-aggregate mongoose
 ```
 
 ---
@@ -41,7 +41,7 @@ First, attach the `mongogatePlugin` to your Mongoose schema. This will add the s
 
 ```javascript
 import mongoose from "mongoose";
-import { mongogatePlugin } from "mongogate";
+import { mongogatePlugin } from "mongo-aggregate";
 
 const userSchema = new mongoose.Schema({
   name: String,
