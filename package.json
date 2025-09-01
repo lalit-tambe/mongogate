@@ -1,5 +1,5 @@
 {
-  "name": "mongogate",
+  "name": "mongo-aggregate",
   "version": "1.0.0",
   "description": "Elegant Aggregation Query Builder for MongoDB",
   "type": "module",
