@@ -1,7 +1,7 @@
 {
   "name": "mongo-aggregate",
   "version": "1.0.0",
-  "description": "Elegant Aggregation Query Builder for MongoDB",
+  "description": "An elegant, Laravel-style fluent query builder for creating MongoDB aggregation pipelines in Mongoose.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -39,9 +39,16 @@
   },
   "keywords": [
     "mongodb",
-    "aggregation",
     "mongoose",
-    "query-builder"
+    "aggregate",
+    "aggregation",
+    "pipeline",
+    "query",
+    "builder",
+    "query-builder",
+    "eloquent",
+    "laravel",
+    "fluent"
   ],
   "author": "Lalit Tambe",
   "license": "MIT",
