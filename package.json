@@ -1,6 +1,6 @@
 {
   "name": "mongo-aggregate",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An elegant, Laravel-style fluent query builder for creating MongoDB aggregation pipelines in Mongoose.",
   "type": "module",
   "main": "dist/index.cjs",
